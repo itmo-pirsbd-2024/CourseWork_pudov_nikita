@@ -95,3 +95,5 @@ gradle-app.setting
 /gradle/wrapper/gradle-wrapper.properties
 /gradlew
 /gradlew.bat
+/redis-docker/redisdata/
+
