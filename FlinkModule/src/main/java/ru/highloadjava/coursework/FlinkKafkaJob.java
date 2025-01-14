@@ -21,8 +21,8 @@ import java.time.Duration;
 import java.util.Date;
 
 public class FlinkKafkaJob {
-    public FlinkKafkaJob() {
-    }
+    /*public FlinkKafkaJob() {
+    }*/
 
     public void execute() throws Exception {
         // Конфигурация Kafka

@@ -7,14 +7,19 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.Date;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.sync.RedisCommands;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.slf4j.Logger;
 
+@Slf4j
 public class WebSocketClientCaller {
+
 
     public static void main(String[] args) throws Exception {
         // Инициализация Redis
@@ -49,6 +54,8 @@ public class WebSocketClientCaller {
         private final RedisCommands<String, String> redisCommands;
         private final KafkaProducer<String, String> kafkaProducer;
 
+        private final ObjectMapper objectMapper = new ObjectMapper();
+
         public BinanceWebSocketListener(RedisCommands<String, String> redisCommands, KafkaProducer<String, String> kafkaProducer) {
             this.redisCommands = redisCommands;
             this.kafkaProducer = kafkaProducer;
@@ -56,13 +63,15 @@ public class WebSocketClientCaller {
 
         @Override
         public void onOpen(WebSocket webSocket) {
-            System.out.println("WebSocket connection opened.");
+            //System.out.println("WebSocket connection opened.");
+            log.debug("WebSocket connection opened");
             webSocket.request(1); // Запрашиваем первое сообщение
         }
 
         @Override
         public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-            System.out.println("Message received: " + data);
+            //System.out.println("Message received: " + data);
+            log.info("Message received: " + data);
 
             // Асинхронная обработка сообщения
             return CompletableFuture.runAsync(() -> {
@@ -81,16 +90,17 @@ public class WebSocketClientCaller {
             return null;
         }
 
+
         private void processMessage(String message) {
             try {
-                // Парсим JSON-данные
-                JSONObject data = new JSONObject(message);
-                if (data.has("k")) {
-                    JSONObject klineData = data.getJSONObject("k");
-                    String symbol = klineData.getString("s");
-                    long eventTime = klineData.getLong("t");
-                    String openPrice = klineData.getString("o");
-                    String closePrice = klineData.getString("c");
+                // Десериализация JSON в объект
+                BinanceKlineMessage binanceMessage = objectMapper.readValue(message, BinanceKlineMessage.class);
+                if (binanceMessage.getKlineData() != null) {
+                    KlineData klineData = binanceMessage.getKlineData();
+                    String symbol = klineData.getSymbol();
+                    Long eventTime = klineData.getEventTime();
+                    Double openPrice = klineData.getOpenPrice();
+                    Double closePrice = klineData.getClosePrice();
 
                     String uniqueId = symbol + "_" + eventTime;
 
@@ -107,16 +117,16 @@ public class WebSocketClientCaller {
                         String kafkaMessageString = kafkaMessage.toString();
                         kafkaProducer.send(new ProducerRecord<>("crypto_kline_data", symbol, kafkaMessageString));
 
-                        System.out.println(kafkaMessageString);
+                        log.info(kafkaMessageString);
 
                         // Сохраняем уникальный ID в Redis с TTL 30 минут
                         redisCommands.setex(uniqueId, 1800, "1");
                     } else {
-                        System.out.println("Duplicate message detected, skipping: " + uniqueId);
+                        log.info("Duplicate message detected, skipping: " + uniqueId);
                     }
                 }
             } catch (Exception e) {
-                System.err.println("Error processing message: " + e.getMessage());
+                log.error("Error processing message: " + e.getMessage(), e);
             }
         }
     }

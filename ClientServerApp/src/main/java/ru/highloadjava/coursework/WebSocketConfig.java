@@ -2,12 +2,15 @@ package ru.highloadjava.coursework;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.*;
 
+import java.util.List;
+
 @Configuration
 @EnableWebSocketMessageBroker
-public class WebSocketConfig implements WebSocketMessageBrokerConfigurer /*WebSocketConfigurer*/ {
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     /*
     Конфигурируем некий брокер в Websocket, при обращении по пути /topic/..
@@ -35,7 +38,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer /*WebSo
     }
 
     @Override
-    public boolean configureMessageConverters(java.util.List<org.springframework.messaging.converter.MessageConverter> messageConverters) {
+    public boolean configureMessageConverters(List<MessageConverter> messageConverters) {
         messageConverters.add(new MappingJackson2MessageConverter());
         return true;
     }

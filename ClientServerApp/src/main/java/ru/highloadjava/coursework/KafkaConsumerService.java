@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import ru.highloadjava.coursework.datamodel.CryptoAggregatedData;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -20,24 +21,29 @@ import java.util.List;
 public class KafkaConsumerService {
 
     //private static final String TOPIC = "crypto_data_aggregated"; // Укажите вашу тему Kafka
-    @Getter
-    @Autowired
+    //@Getter
+    //@Autowired
     private final SimpMessagingTemplate messagingTemplate;
 
-    @Autowired
+    //@Autowired
     private ConsumerFactory<String, CryptoAggregatedData> kafkaConsumerFactory;
     private final int CACHE_SIZE = 1000; // Максимальный размер кэша
 
-    @Getter
+    //@Getter
     private final List<CryptoAggregatedData> dataCache = new ArrayList<>();
 
 
-    public KafkaConsumerService(SimpMessagingTemplate messagingTemplate, ObjectMapper objectMapper) {
+    public KafkaConsumerService(SimpMessagingTemplate messagingTemplate, ConsumerFactory<String, CryptoAggregatedData> kafkaConsumerFactory, ObjectMapper objectMapper) {
         this.messagingTemplate = messagingTemplate;
+        this.kafkaConsumerFactory = kafkaConsumerFactory;
     }
 
-
-
+    /**
+     * Возвращает неизменяемое представление кэша данных.
+     */
+    public List<CryptoAggregatedData> getDataCache() {
+        return Collections.unmodifiableList(dataCache);
+    }
 
 
     /**

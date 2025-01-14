@@ -1,27 +1,26 @@
 package ru.highloadjava.coursework;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.highloadjava.coursework.datamodel.CryptoAggregatedData;
 import ru.highloadjava.coursework.deserialization.CryptoAggregatedDataDeserializer;
-
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 
+@Slf4j
 public class KafkaConsumerAggregatedData {
-    private static final Logger logger = LoggerFactory.getLogger(KafkaConsumerAggregatedData.class);
+    //private static final Logger logger = LoggerFactory.getLogger(KafkaConsumerAggregatedData.class);
 
     public static void main(String[] args) {
 
 
-        logger.info("Kafka consumer!");
+        log.info("Kafka consumer!");
         String KAFKA_SERVER = "localhost:9092";
         String groupId = "aggregated-data-consumer";
         //String topics = "crypto_kline_data";
@@ -49,12 +48,19 @@ public class KafkaConsumerAggregatedData {
 
             for (ConsumerRecord<String, CryptoAggregatedData> record: records) {
                 CryptoAggregatedData data = record.value();
-                logger.info("Key: " + record.key() +
+                /*log.info("Key: " + record.key() +
                         " Symbol: " + data.getSymbol() +
                         " Average Price: " + data.getAverage_price() +
                         " Event Time: " + data.getEvent_time() +
                         " Partition: " + record.partition() +
-                        " Offset: " + record.offset());
+                        " Offset: " + record.offset());*/
+                log.info("Key: {}, Symbol: {}, Average Price: {}, Event Time: {}, Partition: {}, Offset: {}",
+                        record.key(),
+                        data.getSymbol(),
+                        data.getAverage_price(),
+                        data.getEvent_time(),
+                        record.partition(),
+                        record.offset());
             }
         }
     }

@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'org.springframework.boot' version '3.3.0'
+    id 'io.freefair.lombok' version '8.2.0'
 }
 
 group = 'ru.highloadjava.coursework'
@@ -27,6 +28,7 @@ dependencies {
     implementation project(path: ':FlinkModule')
 
 
+    compileOnly 'org.projectlombok:lombok:1.18.36'
     annotationProcessor 'org.projectlombok:lombok:1.18.36'
 
 
