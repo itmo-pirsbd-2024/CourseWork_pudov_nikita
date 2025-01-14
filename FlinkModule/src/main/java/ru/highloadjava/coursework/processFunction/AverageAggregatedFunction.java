@@ -9,14 +9,14 @@ import ru.highloadjava.coursework.datamodel.CryptoData;
 public class AverageAggregatedFunction implements WindowFunction<CryptoData, CryptoAggregatedData, String, TimeWindow> {
     @Override
     public void apply(String key, TimeWindow window, Iterable<CryptoData> values, Collector<CryptoAggregatedData> out) throws Exception {
-        Double sum = 0.0;
+        double sum = 0.0;
         int count = 0;
         for (CryptoData value: values) {
             sum += value.getClose();
             count++;
         }
 
-        Double avg_price = sum / count;
+        double avg_price = sum / count;
 
         CryptoAggregatedData result = new CryptoAggregatedData();
         result.setSymbol(key);
