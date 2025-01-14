@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Crypto Price Chart</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.2/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+
+</head>
+
+<body>
+
+<div>
+    <h2>Crypto BTC/USD Price Chart</h2>
+    <canvas id="cryptoChart" width="400" height="200"></canvas>
+</div>
+
+<script>
+
+
+    // Настройка WebSocket
+    const socket = new SockJS('http://localhost:8084/crypto');  // подключение к WebSocket серверу
+    const stompClient = Stomp.over(socket);
+
+    // Настройка получения данных через WebSocket
+    stompClient.connect({}, function () {
+        console.log("Connected to WebSocket");
+
+        // Подписка на начальные данные (из кэша)
+        let initialDataSubscription = stompClient.subscribe('/topic/initial-data', function (message) {
+            const initialData = JSON.parse(message.body);
+            console.log("Initial data received:", initialData);
+            initialData.forEach(data => {
+                updateChart(data.event_time, data.average_price);
+            });
+
+            // После получения начальных данных отписываемся от подписки
+            stompClient.unsubscribe(initialDataSubscription.id);
+        });
+
+        stompClient.subscribe('/topic/updates', function (message) {
+            console.log("Received message: " + message.body);
+            var data = JSON.parse(message.body);
+            console.log("Parsed data:", data);  // Выводим распарсенные данные
+            updateChart(data.event_time, data.average_price);  // Обновление графика
+        });
+    });
+
+    // Инициализация Chart.js
+    var ctx = document.getElementById('cryptoChart').getContext('2d');
+
+    var chartData = {
+        labels: [],  // Метки (время)
+        datasets: [{
+            label: 'Average Price',
+            data: [],  // Данные (цены)
+            borderColor: 'rgba(75, 192, 192, 1)',  // Цвет линии
+            fill: false,  // Без заливки
+        }]
+    };
+
+    var chartOptions = {
+        responsive: true,
+        scales: {
+            x: {
+                type: 'time',  // Ось X работает с временем
+                time: {
+                    unit: 'minute',  // Можно настроить на минуты, часы и т.д.
+                    tooltipFormat: 'HH:mm:ss',  // Формат отображения времени в тултипах
+                    displayFormats: {
+                    minute: 'HH:mm:ss',  // Формат времени на оси
+                    },
+                },
+                ticks: {
+                source: 'auto',  // Автоматическое выравнивание
+                maxRotation: 0, // Отключаем поворот меток для читаемости
+                autoSkip: true,
+                },
+                title: {
+                    display: true,
+                    text: 'Time'
+                },
+            },
+            y: {
+                beginAtZero: false,  // Начинаем с минимального значения
+                title: {
+                    display: true,
+                    text: 'Average Price'
+                }
+            },
+        },
+    };
+
+    var cryptoChart = new Chart(ctx, {
+        type: 'line',  // Линия
+        data: chartData,
+        options: chartOptions,
+    });
+
+    // Функция для обновления графика
+    function updateChart(eventTime, averagePrice) {
+        // Преобразуем unix-время (секунды) в миллисекунды
+        //var formattedTime = moment.unix(eventTime).toDate();  // moment возвращает объект Date
+        var currentTime = moment().toDate();  // Текущее время
+
+        // Для отладки можно логировать оба времени
+        //console.log("Event Time:", formattedTime, "Current Time:", currentTime);
+        console.log("Current Time:", currentTime);
+        //chartData.labels.push(formattedTime);  // Добавляем в массив меток
+        chartData.labels.push(currentTime);
+        chartData.datasets[0].data.push(averagePrice);  // Добавляем цену в данные графика
+
+        // Удаляем старые данные за пределами последних 10 минут
+        while (chartData.labels.length > 0 && moment(currentTime).diff(moment(chartData.labels[0]), 'minutes') > 1) {
+            chartData.labels.shift();
+            chartData.datasets[0].data.shift();
+        }
+
+        // Ограничение на количество точек, например, 50 последних значений
+        //if (chartData.labels.length > 50) {
+        //    chartData.labels.shift();  // Удаляем первую метку
+        //    chartData.datasets[0].data.shift();  // Удаляем первую цену
+        //}
+
+        cryptoChart.update();  // Обновляем график
+    }
+
+</script>
+
+</body>
+</html>
